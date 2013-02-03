@@ -5,6 +5,7 @@ $(function () {
 
   var vidEl = document.querySelector("#js-video")
     , canvas = document.querySelector('#js-snapshot').getContext('2d')
+    , n = window.navigator
     , newPixels
     , oldPixels
     , pixLength
@@ -13,8 +14,10 @@ $(function () {
     , intervalTime = 100
     ;
 
+  n.getUserMedia = n.getUserMedia || n.webkitGetUserMedia || n.mozGetUserMedia;
+
   $('body').on('click', '.js-allow-video', function () {
-    window.navigator.webkitGetUserMedia({ video: true }, function (stream) {
+    window.navigator.getUserMedia({ video: true }, function (stream) {
       vidEl.src = URL.createObjectURL(stream);
       console.log('URL video stream', vidEl.src);
       vidEl.play();
