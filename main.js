@@ -13,8 +13,7 @@ $(function () {
     , pixLength
     , $hl = $('#js-pointer')
     , firstFrame = true
-    , intervalTime = 166
-    , kMax = 100
+    , intervalTime = 100
     , keyFrame = 20
     , drawCount = 0
     ;
@@ -146,7 +145,7 @@ $(function () {
       if (r > 16 || g > 16 || b > 16) {
       //if (total > 16) {
         //IT'S DIFFERENT!
-        tmpPixels.data[i * 4 + 1] = total;      //it's green, make pixel invisible
+        tmpPixels.data[i * 4 + 1] = 1; //total;      //it's green, make pixel invisible
         columns[left][top] = 1;                 //give it a columns value of 1
       } else {
         //NOT DIFFERENT
@@ -177,6 +176,7 @@ $(function () {
         , colLimit
         , suspect
         , localSum
+        , kMax = 100
         , k
         ;
 
@@ -252,6 +252,45 @@ $(function () {
           scores[i][j] = localSum;
         }
       }
+
+      var targetX = 0
+        , targetY = 0
+        , highScore = 0
+        , targetCount = 0
+        ;
+
+      for (i = 0; i < vidWidth; i++) {
+        for (j = 0; j < vidHeight; j++) {
+          if (scores[i][j] > highScore) {
+            highScore = scores[i][j];
+          }
+        }
+      }
+
+      if (highScore < kMax * 15) {
+        console.log('no movement values were high enough');
+        return;
+      }
+
+      for (i = 0; i < vidWidth; i++) {
+        for (j = 0; j < vidHeight; j++) {
+          if (scores[i][j] > 1000) {
+            targetX += i,
+            targetY += j;
+            targetCount += 1;
+          }
+        }
+      }
+
+      if (targetCount < 10) {
+        console.log('too few movement values were high enough');
+        return;
+      }
+
+      targetX = targetX / targetCount;
+      targetY = targetY / targetCount;
+
+      positionPointer(targetX, targetY);
     }
 
     function scoreByScan() {
@@ -266,7 +305,7 @@ $(function () {
         , score
         , highColVal = 0
         , highScore = 0
-        , lowestHighScore = 1000
+        , lowestHighScore = 1500
         , crop = 0 // to crop out the noise that way overinflates
         , weightedScore
         , connectedVal
@@ -368,6 +407,12 @@ $(function () {
         for (nRow = (vidHeight - crop) - 2; nRow >= crop; nRow -= 1) {
           score = /*scores[nCol][nRow] =*/ column[nRow];
 
+          // take the highest Y high score
+          if (score > lowestHighScore && score > highScore * 0.25 && nRow < targetY) {
+            targetY = nRow;
+            targetX = nCol;
+          }
+
           weightedScore = Math.floor((score / highScore) * 512);
 
           //tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 0] = 255 - weightedScore;
@@ -386,8 +431,8 @@ $(function () {
       }
     }
 
-    //scoreByNeighbors();
-    scoreByScan();
+    scoreByNeighbors();
+    //scoreByScan();
     canvas.putImageData(tmpPixels, 0, 0);
     return;
 
@@ -400,42 +445,6 @@ $(function () {
     /*
     //Find the pixel closest to the top left that has the highest score. The
     //	pixel with the highest score is where the highlight box will appear.
-    var targetx = 0
-      , targety = 0
-      , highScore = 0
-      , targetCount = 0
-      ;
-
-    for (i = 0; i < vidWidth; i++) {
-      for (j = 0; j < vidHeight; j++) {
-        if (scores[i][j] > highScore) {
-          highScore = scores[i][j];
-        }
-      }
-    }
-
-    if (highScore < kMax * 15) {
-      console.log('no movement values were high enough');
-      return;
-    }
-
-    for (i = 0; i < vidWidth; i++) {
-      for (j = 0; j < vidHeight; j++) {
-        if (scores[i][j] > 1000) {
-          targetx += i,
-          targety += j;
-          targetCount += 1;
-        }
-      }
-    }
-
-    if (targetCount < 10) {
-      console.log('too few movement values were high enough');
-      return;
-    }
-
-    targetx = targetx / targetCount;
-    targety = targety / targetCount;
     */
 
 
