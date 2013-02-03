@@ -6,12 +6,12 @@
   </head>
   <body>
     <div class="container">
+      <button style="display:none;" type="button" class="js-toggle-video">Toggle Video Feed</button>
+      <button type="button" class="js-allow-video">Get Video Feed</button>
+      <br/>
       <video style="display:none;" id="js-video" width="320" height="240"></video>
       <canvas style="display:none;" id="js-snapshot" class="css-snapshot" width="320" height="240"></canvas>
       <img style="display:none;" class="css-pointer" id="js-pointer" src="http://upload.wikimedia.org/wikipedia/en/d/d0/Chrome_Logo.svg"/>
-      <br/>
-      <button style="display:none;" type="button" class="js-toggle-video">Toggle Video Feed</button>
-      <button type="button" class="js-allow-video">Get Video Feed</button>
     </div>
     <!-- Now let's get the input going into the webcam feed-->
     <script src="http://code.jquery.com/jquery-1.9.0.js"></script>
