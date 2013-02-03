@@ -1,3 +1,12 @@
+html { 
+  background: url(http://upload.wikimedia.org/wikipedia/en/e/e3/Firefox-logo.svg) no-repeat center center fixed; 
+  /*background: url(http://upload.wikimedia.org/wikipedia/en/d/d0/Chrome_Logo.svg) no-repeat center center fixed;*/
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+
+}
 .css-pointer {
 	position: fixed;
   width: 100px;
@@ -19,8 +28,7 @@
   margin-left: auto;
   margin-right: auto;
   text-align: center;
-}
-body {
+
   background: rgb(135,177,211); /* Old browsers */
   background: -moz-linear-gradient(top, rgba(135,177,211,1) 0%, rgba(0,71,153,1) 100%, rgba(30,87,153,1) 100%); /* FF3.6+ */
   background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(135,177,211,1)), color-stop(100%,rgba(0,71,153,1)), color-stop(100%,rgba(30,87,153,1))); /* Chrome,Safari4+ */
@@ -28,12 +36,4 @@ body {
   background: -o-linear-gradient(top, rgba(135,177,211,1) 0%,rgba(0,71,153,1) 100%,rgba(30,87,153,1) 100%); /* Opera 11.10+ */
   background: -ms-linear-gradient(top, rgba(135,177,211,1) 0%,rgba(0,71,153,1) 100%,rgba(30,87,153,1) 100%); /* IE10+ */
   background: linear-gradient(to bottom, rgba(135,177,211,1) 0%,rgba(0,71,153,1) 100%,rgba(30,87,153,1) 100%); /* W3C */
-}
-html { 
-  background: url(http://upload.wikimedia.org/wikipedia/en/e/e3/Firefox-logo.svg) no-repeat center center fixed; 
-  /*background: url(http://upload.wikimedia.org/wikipedia/en/d/d0/Chrome_Logo.svg) no-repeat center center fixed;*/
-  -webkit-background-size: cover;
-  -moz-background-size: cover;
-  -o-background-size: cover;
-  background-size: cover;
 }

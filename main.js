@@ -3,35 +3,40 @@
 $(function () {
   "use strict";
 
-  var videoEl = document.querySelector("#js-video")
+  var vidEl = document.querySelector("#js-video")
     , canvas = document.querySelector('#js-snapshot').getContext('2d')
     , newPixels
     , oldPixels
     , pixLength
-    , hl = document.querySelector('#js-pointer')
+    , $hl = $('#js-pointer')
     , firstFrame = true
     , intervalTime = 100
     ;
 
   $('body').on('click', '.js-allow-video', function () {
     window.navigator.webkitGetUserMedia({ video: true }, function (stream) {
-      videoEl.src = URL.createObjectURL(stream);
-      console.log('URL video stream', videoEl.src);
-      videoEl.play();
+      vidEl.src = URL.createObjectURL(stream);
+      console.log('URL video stream', vidEl.src);
+      vidEl.play();
       setInterval(draw, intervalTime);
+      $('.js-allow-video').fadeOut();
+      $('.js-toggle-video').fadeIn();
+      $('#js-video').fadeIn();
+      $('#js-pointer').fadeIn();
     });
+  });
+  $('body').on('click', '.js-toggle-video', function () {
+    $('#js-snapshot').fadeToggle();
   });
 
 
   function draw() {
-    console.log('updating');
-
-    var vidWidth = videoEl.width
-      , vidHeight = videoEl.height
+    var vidWidth = vidEl.width
+      , vidHeight = vidEl.height
       ;
 
     //Let's add some bloody stuff the analyze the image in the canvas
-    canvas.drawImage(videoEl, 0, 0, vidWidth, vidHeight);
+    canvas.drawImage(vidEl, 0, 0, vidWidth, vidHeight);
 
     //Get the imageData from the canvas
 
@@ -92,7 +97,7 @@ $(function () {
         ;
         
       // 0-255 , 3 * 255
-      if ((r + g + b) > 128) {
+      if ((r + g + b) > 256) {
         //IT'S DIFFERENT!
         newPixels.data[i * 4 + 3] = 0; //it's green, make pixel invisible
         map[left][top] = 1;         //give it a map value of 1
@@ -178,15 +183,13 @@ $(function () {
         , newTop
         ;
 
-      newLeft = ""+Math.floor(
-        document.width*(diffSumX / videoEl.width)
-      )+"px";
-      newTop = ""+Math.floor(
-        document.height*(diffSumY / videoEl.height)
-      )+"px";
-      //hl.style.left = 
-      //hl.style.top = 
-      $(hl).animate({ left: newLeft, top: newTop }, intervalTime);
+      newLeft = Math.floor(document.width * ((vidEl.width - diffSumX) / vidEl.width));
+      newTop = Math.floor(document.height * (diffSumY / vidEl.height));
+      if (newLeft > document.width * 0.2) {
+        // TODO debounce
+        //$('#js-snapshot').fadeToggle();
+      }
+      $hl.animate({ left: newLeft + 'px', top: newTop + 'px' }, intervalTime);
     }
     canvas.putImageData(newPixels, 0, 0);
   }
