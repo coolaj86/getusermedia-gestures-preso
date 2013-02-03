@@ -11,11 +11,15 @@ $(function () {
     , oldPixels
     , tmpPixels
     , pixLength
+    , targetX
+    , targetY
     , $hl = $('#js-pointer')
     , firstFrame = true
     , intervalTime = 100
-    , keyFrame = 20
-    , drawCount = 0
+    , columns
+    , scores
+    , vidWidth = vidEl.width
+    , vidHeight = vidEl.height
     ;
 
   function positionPointer(targetx, targety) {
@@ -45,6 +49,25 @@ $(function () {
   n.getUserMedia = n.getUserMedia || n.webkitGetUserMedia || n.mozGetUserMedia;
 
   function initialize() {
+    var i
+      ;
+
+    // columns: make two dimensional array to store which pixels detect differences
+    // scores: 2d array to store the neighborhood scores for each pixel. Each pixel
+    //	gets a score of the summary of the green pixels around it. It looks
+    //	at the pixels to the left, right, above and below the pixel. The
+    //	pixel gets the score of the sum of that total.
+
+    // Initialize all of the arrays just once
+    columns = [];
+    columns.length = vidWidth;
+    scores = [];
+    scores.length = vidWidth;
+    for (i = 0; i < vidWidth; i++) {
+      columns[i] = [];
+      scores[i] = [];
+    }
+
     window.navigator.getUserMedia({ video: true }, function (stream) {
       vidEl.src = URL.createObjectURL(stream);
       console.log('URL video stream', vidEl.src);
@@ -61,21 +84,15 @@ $(function () {
     $('#js-snapshot').slideToggle();
   });
 
-
-  function draw() {
-    var vidWidth = vidEl.width
-      , vidHeight = vidEl.height
-      , i
+  function getDifference() {
+    var i
       , j
-      , columns
-      , scores
       ;
 
-    //Let's add some bloody stuff the analyze the image in the canvas
+    // To get `imageData` from a video element, it must first be drawn to a canvas
     canvas.drawImage(vidEl, 0, 0, vidWidth, vidHeight);
 
-    //Get the imageData from the canvas
-
+    // Get the imageData from the canvas
     if (firstFrame) {
       newPixels = canvas.getImageData(0, 0, vidWidth, vidHeight);
       pixLength = newPixels.data.length / 4;
@@ -87,19 +104,12 @@ $(function () {
     newPixels = canvas.getImageData(0, 0, vidWidth, vidHeight);
     tmpPixels = canvas.getImageData(0, 0, vidWidth, vidHeight);
 
-    //columns: make two dimensional array to store which pixels detect green
-    //scores: 2d array to store the 5x5 scores for each pixel. Each pixel
-    //	gets a score of the summary of the green pixels around it. It looks
-    //	at the 5 pixels to the left, right, above and below the pixel. The
-    //	pixel gets the score of the sum of that total.
-    columns = [];
-    columns.length = vidWidth;
-    scores = [];
-    scores.length = vidWidth;
-    for(i = 0; i < vidWidth; i++){
-      columns[i] = [];
+    // Reinitialize the arrays (look ma, near-0 garbage collection)
+    for (i = 0; i < vidWidth; i++) {
+      // a cheap, fast way to clear the array
+      columns[i].length = 0;
       columns[i].length = vidHeight;
-      scores[i] = [];
+      scores[i].length = 0;
       scores[i].length = vidHeight;
     }
 
@@ -142,8 +152,7 @@ $(function () {
         ;
         
       // 0-255 , 3 * 255
-      if (r > 16 || g > 16 || b > 16) {
-      //if (total > 16) {
+      if (total > 16 && (r > 16 || g > 16 || b > 16)) {
         //IT'S DIFFERENT!
         tmpPixels.data[i * 4 + 1] = 1; //total;      //it's green, make pixel invisible
         columns[left][top] = 1;                 //give it a columns value of 1
@@ -153,7 +162,9 @@ $(function () {
       }
       
     }
+  }
 
+  function scoreByNeighbors() {
     //NOW LET'S CALCULATE EACH SCORE BY WAY OF A NEIGHBORHOOD OPERATION
     /*
       [],[],[],[ ],[ ],[1],[ ],[ ],[],[],[]
@@ -165,289 +176,284 @@ $(function () {
       You get a score of the total of the people around you
     */
 
-    var targetX
-      , targetY
+    var i
+      , j
+      , rowLimit
+      , colLimit
+      , suspect
+      , localSum
+      , kMax = 100
+      , k
       ;
-
-    function scoreByNeighbors() {
-      var i
-        , j
-        , rowLimit
-        , colLimit
-        , suspect
-        , localSum
-        , kMax = 100
-        , k
-        ;
-
-      colLimit = columns.length;
-      rowLimit = columns[0].length;
-
-      //sum the score for each pixel
-      // more j means lower
-      // more i means righter
-      for (j = 0; j < vidHeight; j++) {
-        for (i = 0; i < vidWidth; i++) {
-          suspect = columns[i][j];
-          if (suspect) {
-            localSum = kMax;
-          } else {
-            localSum = 0;
-            continue;
-          }
-
-          // TODO for each value of k
-          // get each corner i - k, i + k, j - k, j + k
-          // sweep (non-inclusively) from [i - k][j - k] to [i - k][j + k]
-          // sweep (non-inclusively) from [i - k][j + k] to [i - k][j - k]
-          // sweep (non-inclusively) from [i + k][j - k] to [i + k][j + k]
-          // sweep (non-inclusively) from [i + k][j + k] to [i + k][j - k]
-          // sweep a minimum of 10 spaces
-          // sweep a maximum of 100 spaces
-          // when the sum is less than 1/4, stop the sweep
-          
-          // work left
-          k = 0;
-          while (suspect && i - k >= 0 && k <= kMax) {
-            suspect = columns[i - k][j];
-            if (suspect) {
-              localSum += (kMax - k);
-            }
-            k += 1;
-          }
-
-          // work right
-          k = 0;
-          while (suspect && i + k < rowLimit && k <= kMax) {
-            suspect = columns[i + k][j];
-            if (suspect) {
-              localSum += (kMax - k);
-            }
-            k += 1;
-          }
-
-          // give points from a pixel for each pixel above it
-          /*
-          k = 0;
-          while (suspect && (j - k >= 0) && k <= kMax) {
-            suspect = columns[i][j - k];
-            if (suspect) {
-              localSum += (kMax - k);
-            }
-            k += 1;
-          }
-          */
-
-          // give points to a pixel for each pixel below it
-          k = 0;
-          while (suspect && (j + k < colLimit) && k <= kMax) {
-            suspect = columns[i][j + k];
-            if (suspect) {
-              //localSum += (kMax - k);
-              localSum += (kMax + k);
-            }
-            k += 1;
-          }
-
-          scores[i][j] = localSum;
-        }
-      }
-
-      var targetX = 0
-        , targetY = 0
-        , highScore = 0
-        , targetCount = 0
-        ;
-
-      for (i = 0; i < vidWidth; i++) {
-        for (j = 0; j < vidHeight; j++) {
-          if (scores[i][j] > highScore) {
-            highScore = scores[i][j];
-          }
-        }
-      }
-
-      if (highScore < kMax * 15) {
-        console.log('no movement values were high enough');
-        return;
-      }
-
-      var goodScore = highScore * 0.9;
-      for (i = 0; i < vidWidth; i++) {
-        for (j = 0; j < vidHeight; j++) {
-          if (scores[i][j] > goodScore) {
-            targetX += i,
-            targetY += j;
-            targetCount += 1;
-          }
-        }
-      }
-
-      if (targetCount < 10) {
-        console.log('too few movement values were high enough');
-        return;
-      }
-
-      targetX = targetX / targetCount;
-      targetY = targetY / targetCount;
-
-      positionPointer(targetX, targetY);
-    }
-
-    function scoreByScan() {
-      var nCol
-        , mCol
-        , nRow
-        , startCol
-        , preDipCol
-        , colVal
-        , numCols
-        , column
-        , score
-        , highColVal = 0
-        , highScore = 0
-        , lowestHighScore = 1500
-        , crop = 0 // to crop out the noise that way overinflates
-        , weightedScore
-        , connectedVal
-        , highConnVal
-        ;
-
-      // for n consecutive cells in a row, all cells get the value n
-      for (nRow = crop; nRow < vidHeight - crop; nRow += 1) {
-        startCol = 0;
-        highConnVal = 0;
-        for (nCol = crop; nCol < vidWidth - crop; nCol += 1) {
-          connectedVal = columns[nCol][nRow];
-          if (connectedVal) {
-            if (!startCol) {
-              startCol = nCol;
-            }
-            if (connectedVal > highConnVal) {
-              highConnVal = connectedVal;
-            }
-          } else {
-            if (startCol) {
-              numCols = nCol - startCol;
-              colVal = Math.max(numCols, highConnVal);
-              if (colVal > highColVal) {
-                highColVal = colVal;
-              }
-              for (mCol = startCol; mCol < nCol; mCol += 1) {
-                scores[mCol][nRow] += highColVal;//colVal;
-              }
-
-              /*
-              // overinflating values on purpose
-              for (mCol = Math.max(0, startCol - numCols); mCol < startCol; mCol += 1) {
-                scores[mCol][nRow] += mCol;
-              }
-              for (mCol = nCol; mCol < Math.min(vidWidth, nCol + numCols); mCol += 1) {
-                scores[mCol][nRow] += mCol;
-              }
-              */
-              startCol = 0;
-            }
-          }
-        }
-        startCol = 0;
-      }
-
-      // each row gets the value of the cell beneath it
-      for (nCol = crop; nCol < vidWidth - crop; nCol += 1) {
-        column = scores[nCol];
-        for (nRow = (vidHeight - crop) - 2; nRow >= crop; nRow -= 1) {
-          if (column[nRow]) {
-            column[nRow] += column[nRow + 1];
-            score = column[nRow];
-            scores[nCol][nRow] = score;
-            if (score > highScore) {
-              highScore = score;
-              targetX = nCol;
-              targetY = nRow;
-            }
-          }
-        }
-      }
-
-      // smooth the scores
-      for (nCol = crop; nCol < vidWidth - crop; nCol += 1) {
-        column = scores[nCol];
-        for (nRow = (vidHeight - crop) - 2; nRow >= crop; nRow -= 1) {
-        }
-      }
-
-      var threshold = 1000;
-      for (nCol = crop; nCol < vidWidth - crop; nCol += 1) {
-        column = scores[nCol];
-        startCol = 0;
-        preDipCol = 0;
-        for (nRow = (vidHeight - crop) - 2; nRow >= crop; nRow -= 1) {
-          score = scores[nCol][nRow];// = columns[nCol][nRow];
-          if (score > threshold) {
-            if (preDipCol) {
-              for (mCol = preDipCol; mCol < nCol; mCol += 1) {
-                tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 0] = 255;
-                tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 1] = 0;
-              }
-              preDipCol = 0;
-              startCol = 0;
-            } else if (!startCol) {
-              startCol = nCol;
-            }
-          } else {
-            if (startCol) {
-              preDipCol = startCol;
-              startCol = 0;
-            }
-          }
-        }
-      }
-      for (nCol = crop; nCol < vidWidth - crop; nCol += 1) {
-        column = scores[nCol]; //columns[nCol];
-        for (nRow = (vidHeight - crop) - 2; nRow >= crop; nRow -= 1) {
-          score = /*scores[nCol][nRow] =*/ column[nRow];
-
-          // take the highest Y high score
-          if (score > lowestHighScore && score > highScore * 0.25 && nRow < targetY) {
-            targetY = nRow;
-            targetX = nCol;
-          }
-
-          weightedScore = Math.floor((score / highScore) * 512);
-
-          //tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 0] = 255 - weightedScore;
-          //tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 1] = 255 - score;
-          //tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 2] = 0;
-          //tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 3] = 0;
-          tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 3] = 255 - weightedScore;
-        }
-      }
-
-      console.log('HighColVal', highColVal);
-      console.log('HighScore', highScore);
-
-      if (highScore > lowestHighScore) {
-        positionPointer(targetX, targetY);
-      }
-    }
-
-    scoreByNeighbors();
-    //scoreByScan();
-    canvas.putImageData(tmpPixels, 0, 0);
-    return;
 
     /*
       Now that we have the neighborhood scores for each pixel, we need to 
       find the pixel with the highest score. That is the highest concentration
-      of Green
+      of Difference
       
     */
-    /*
+
+    colLimit = columns.length;
+    rowLimit = columns[0].length;
+
+    //sum the score for each pixel
+    // more j means lower
+    // more i means righter
+    for (j = 0; j < vidHeight; j++) {
+      for (i = 0; i < vidWidth; i++) {
+        suspect = columns[i][j];
+        if (suspect) {
+          localSum = kMax;
+        } else {
+          localSum = 0;
+          continue;
+        }
+
+        // TODO for each value of k
+        // get each corner i - k, i + k, j - k, j + k
+        // sweep (non-inclusively) from [i - k][j - k] to [i - k][j + k]
+        // sweep (non-inclusively) from [i - k][j + k] to [i - k][j - k]
+        // sweep (non-inclusively) from [i + k][j - k] to [i + k][j + k]
+        // sweep (non-inclusively) from [i + k][j + k] to [i + k][j - k]
+        // sweep a minimum of 10 spaces
+        // sweep a maximum of 100 spaces
+        // when the sum is less than 1/4, stop the sweep
+        
+        // work left
+        k = 0;
+        while (suspect && i - k >= 0 && k <= kMax) {
+          suspect = columns[i - k][j];
+          if (suspect) {
+            localSum += (kMax - k);
+          }
+          k += 1;
+        }
+
+        // work right
+        k = 0;
+        while (suspect && i + k < rowLimit && k <= kMax) {
+          suspect = columns[i + k][j];
+          if (suspect) {
+            localSum += (kMax - k);
+          }
+          k += 1;
+        }
+
+        // give points from a pixel for each pixel above it
+        /*
+        k = 0;
+        while (suspect && (j - k >= 0) && k <= kMax) {
+          suspect = columns[i][j - k];
+          if (suspect) {
+            localSum += (kMax - k);
+          }
+          k += 1;
+        }
+        */
+
+        // give points to a pixel for each pixel below it
+        k = 0;
+        while (suspect && (j + k < colLimit) && k <= kMax) {
+          suspect = columns[i][j + k];
+          if (suspect) {
+            //localSum += (kMax - k);
+            localSum += (kMax + k);
+          }
+          k += 1;
+        }
+
+        scores[i][j] = localSum;
+      }
+    }
+
+    var targetX = 0
+      , targetY = 0
+      , highScore = 0
+      , targetCount = 0
+      ;
+
+    for (i = 0; i < vidWidth; i++) {
+      for (j = 0; j < vidHeight; j++) {
+        if (scores[i][j] > highScore) {
+          highScore = scores[i][j];
+        }
+      }
+    }
+
+    if (highScore < kMax * 15) {
+      console.log('no movement values were high enough');
+      return;
+    }
+
     //Find the pixel closest to the top left that has the highest score. The
     //	pixel with the highest score is where the highlight box will appear.
-    */
+    var goodScore = highScore * 0.9;
+    for (i = 0; i < vidWidth; i++) {
+      for (j = 0; j < vidHeight; j++) {
+        if (scores[i][j] > goodScore) {
+          targetX += i,
+          targetY += j;
+          targetCount += 1;
+        }
+      }
+    }
 
+    if (targetCount < 10) {
+      console.log('too few movement values were high enough');
+      return;
+    }
 
+    targetX = targetX / targetCount;
+    targetY = targetY / targetCount;
+
+    positionPointer(targetX, targetY);
+  }
+
+  function scoreByScan() {
+    var nCol
+      , mCol
+      , nRow
+      , startCol
+      , preDipCol
+      , colVal
+      , numCols
+      , column
+      , score
+      , highColVal = 0
+      , highScore = 0
+      , lowestHighScore = 1500
+      , crop = 0 // to crop out the noise that way overinflates
+      , weightedScore
+      , connectedVal
+      , highConnVal
+      ;
+
+    // for n consecutive cells in a row, all cells get the value n
+    for (nRow = crop; nRow < vidHeight - crop; nRow += 1) {
+      startCol = 0;
+      highConnVal = 0;
+      for (nCol = crop; nCol < vidWidth - crop; nCol += 1) {
+        connectedVal = columns[nCol][nRow];
+        if (connectedVal) {
+          if (!startCol) {
+            startCol = nCol;
+          }
+          if (connectedVal > highConnVal) {
+            highConnVal = connectedVal;
+          }
+        } else {
+          if (startCol) {
+            numCols = nCol - startCol;
+            colVal = Math.max(numCols, highConnVal);
+            if (colVal > highColVal) {
+              highColVal = colVal;
+            }
+            for (mCol = startCol; mCol < nCol; mCol += 1) {
+              scores[mCol][nRow] += highColVal;//colVal;
+            }
+
+            /*
+            // overinflating values on purpose
+            for (mCol = Math.max(0, startCol - numCols); mCol < startCol; mCol += 1) {
+              scores[mCol][nRow] += mCol;
+            }
+            for (mCol = nCol; mCol < Math.min(vidWidth, nCol + numCols); mCol += 1) {
+              scores[mCol][nRow] += mCol;
+            }
+            */
+            startCol = 0;
+          }
+        }
+      }
+      startCol = 0;
+    }
+
+    // each row gets the value of the cell beneath it
+    for (nCol = crop; nCol < vidWidth - crop; nCol += 1) {
+      column = scores[nCol];
+      for (nRow = (vidHeight - crop) - 2; nRow >= crop; nRow -= 1) {
+        if (column[nRow]) {
+          column[nRow] += column[nRow + 1];
+          score = column[nRow];
+          scores[nCol][nRow] = score;
+          if (score > highScore) {
+            highScore = score;
+            targetX = nCol;
+            targetY = nRow;
+          }
+        }
+      }
+    }
+
+    // smooth the scores
+    for (nCol = crop; nCol < vidWidth - crop; nCol += 1) {
+      column = scores[nCol];
+      for (nRow = (vidHeight - crop) - 2; nRow >= crop; nRow -= 1) {
+      }
+    }
+
+    var threshold = 1000;
+    for (nCol = crop; nCol < vidWidth - crop; nCol += 1) {
+      column = scores[nCol];
+      startCol = 0;
+      preDipCol = 0;
+      for (nRow = (vidHeight - crop) - 2; nRow >= crop; nRow -= 1) {
+        score = scores[nCol][nRow];// = columns[nCol][nRow];
+        if (score > threshold) {
+          if (preDipCol) {
+            for (mCol = preDipCol; mCol < nCol; mCol += 1) {
+              tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 0] = 255;
+              tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 1] = 0;
+            }
+            preDipCol = 0;
+            startCol = 0;
+          } else if (!startCol) {
+            startCol = nCol;
+          }
+        } else {
+          if (startCol) {
+            preDipCol = startCol;
+            startCol = 0;
+          }
+        }
+      }
+    }
+    for (nCol = crop; nCol < vidWidth - crop; nCol += 1) {
+      column = scores[nCol]; //columns[nCol];
+      for (nRow = (vidHeight - crop) - 2; nRow >= crop; nRow -= 1) {
+        score = /*scores[nCol][nRow] =*/ column[nRow];
+
+        // take the highest Y high score
+        if (score > lowestHighScore && score > highScore * 0.25 && nRow < targetY) {
+          targetY = nRow;
+          targetX = nCol;
+        }
+
+        weightedScore = Math.floor((score / highScore) * 512);
+
+        //tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 0] = 255 - weightedScore;
+        //tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 1] = 255 - score;
+        //tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 2] = 0;
+        //tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 3] = 0;
+        tmpPixels.data[(((vidWidth * nRow) + nCol) * 4) + 3] = 255 - weightedScore;
+      }
+    }
+
+    console.log('HighColVal', highColVal);
+    console.log('HighScore', highScore);
+
+    if (highScore > lowestHighScore) {
+      positionPointer(targetX, targetY);
+    }
+  }
+
+  function draw() {
+    getDifference();
+    if (true) {
+      scoreByNeighbors();
+    } else {
+      scoreByScan();
+    }
+    canvas.putImageData(tmpPixels, 0, 0);
   }
 });
