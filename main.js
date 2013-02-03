@@ -266,7 +266,7 @@ $(function () {
         , score
         , highColVal = 0
         , highScore = 0
-        , lowestHighScore = 10000
+        , lowestHighScore = 1000
         , crop = 0 // to crop out the noise that way overinflates
         , weightedScore
         , connectedVal
@@ -297,6 +297,7 @@ $(function () {
                 scores[mCol][nRow] += highColVal;//colVal;
               }
 
+              /*
               // overinflating values on purpose
               for (mCol = Math.max(0, startCol - numCols); mCol < startCol; mCol += 1) {
                 scores[mCol][nRow] += mCol;
@@ -304,6 +305,7 @@ $(function () {
               for (mCol = nCol; mCol < Math.min(vidWidth, nCol + numCols); mCol += 1) {
                 scores[mCol][nRow] += mCol;
               }
+              */
               startCol = 0;
             }
           }
