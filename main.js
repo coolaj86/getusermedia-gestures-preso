@@ -8,7 +8,7 @@ $(function () {
     , newPixels
     , oldPixels
     , pixLength
-    , hl = document.querySelector('#highlight')
+    , hl = document.querySelector('#js-pointer')
     , firstFrame = true
     ;
 
