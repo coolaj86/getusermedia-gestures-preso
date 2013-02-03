@@ -11,12 +11,12 @@ $(function () {
     , pixLength
     , $hl = $('#js-pointer')
     , firstFrame = true
-    , intervalTime = 200
+    , intervalTime = 33
     ;
 
   n.getUserMedia = n.getUserMedia || n.webkitGetUserMedia || n.mozGetUserMedia;
 
-  $('body').on('click', '.js-allow-video', function () {
+  function initialize() {
     window.navigator.getUserMedia({ video: true }, function (stream) {
       vidEl.src = URL.createObjectURL(stream);
       console.log('URL video stream', vidEl.src);
@@ -27,7 +27,8 @@ $(function () {
       $('#js-snapshot').slideDown();
       $('#js-pointer').fadeIn();
     });
-  });
+  }
+  $('body').on('click', '.js-allow-video', initialize);
   $('body').on('click', '.js-toggle-video', function () {
     $('#js-snapshot').slideToggle();
   });
@@ -36,6 +37,10 @@ $(function () {
   function draw() {
     var vidWidth = vidEl.width
       , vidHeight = vidEl.height
+      , i
+      , j
+      , map
+      , scores
       ;
 
     //Let's add some bloody stuff the analyze the image in the canvas
@@ -58,9 +63,9 @@ $(function () {
     //	gets a score of the summary of the green pixels around it. It looks
     //	at the 5 pixels to the left, right, above and below the pixel. The
     //	pixel gets the score of the sum of that total.
-    var map = new Array(vidWidth);
-    var scores = new Array(vidWidth);
-    for(var i = 0; i < vidWidth; i++){
+    map = new Array(vidWidth);
+    scores = new Array(vidWidth);
+    for(i = 0; i < vidWidth; i++){
       map[i] = new Array(vidHeight);
       scores[i] = new Array(vidHeight);
     }
@@ -95,28 +100,32 @@ $(function () {
       var r = Math.abs(newPixels.data[index] - oldPixels.data[index])
         , g = Math.abs(newPixels.data[index + 1] - oldPixels.data[index + 1])
         , b = Math.abs(newPixels.data[index + 2] - oldPixels.data[index + 2])
+        , total = r + g + b
         , left = Math.floor(i % vidWidth)
         , top = Math.floor(i / vidWidth)
         ;
         
       // 0-255 , 3 * 255
-      if ((r + g + b) > 256) {
+      if (r > 16 || g > 16 || b > 16) {
+      //if (r + g + b > 16) {
         //IT'S DIFFERENT!
         newPixels.data[i * 4 + 3] = 0; //it's green, make pixel invisible
-        map[left][top] = 1;         //give it a map value of 1
+        map[left][top] = 1;           //give it a map value of 1
+        //map[left][top] = total;           //give it a map value of 1
         diffSumX += left;
         diffSumY += top;
+        //diffSumCount += 1;
         diffSumCount += 1;
       } else {
         //NOT DIFFERENT
         map[left][top] = 0;         //give it a map value of 0
+        //map[left][top] = total;         //give it a map value of 0
       }
       
     }
 
     diffSumX /= diffSumCount;
     diffSumY /= diffSumCount;
-
 
     //NOW LET'S CALCULATE EACH SCORE BY WAY OF A NEIGHBORHOOD OPERATION
     /*
@@ -127,37 +136,92 @@ $(function () {
       [],[],[],[ ],[ ],[1],[ ],[ ],[],[],[]
     
       You get a score of the total of the people around you
-
     */
 
-    //sum the score for each pixel
-    for(var j = 5; j < vidHeight-5; j++){
-      for(i = 5; i < vidWidth-5; i++){
-        var l5 = map[i-5][j],
-          l4 = map[i-4][j],
-          l3 = map[i-3][j],
-          l2 = map[i-2][j],
-          l1 = map[i-1][j],
-          r1 = map[i+1][j],
-          r2 = map[i+2][j],
-          r3 = map[i+3][j],
-          r4 = map[i+4][j],
-          r5 = map[i+5][j],
-          u5 = map[i][j-5],
-          u4 = map[i][j-4],
-          u3 = map[i][j-3],
-          u2 = map[i][j-2],
-          u1 = map[i][j-1],
-          d1 = map[i][j+1],
-          d2 = map[i][j+1],
-          d3 = map[i][j+1],
-          d4 = map[i][j+1],
-          d5 = map[i][j+1],
-          self = map[i][j];
-        //console.log(i,j);
-        scores[i][j] = l5+l4+l3+l2+l1+r1+r2+r3+r4+r5+u5+u4+u3+u2+u1+d1+d2+d3+d4+d5+self;
+    function score() {
+      var i
+        , j
+        , rowLimit
+        , colLimit
+        , dist = 5
+        , suspect
+        , localSum
+        , k
+        , kMax = 100
+        ;
+
+      rowLimit = map.length;
+      colLimit = map[0].length;
+
+      //sum the score for each pixel
+      for (j = 0; j < vidHeight; j++) {
+        for (i = 0; i < vidWidth; i++) {
+          suspect = map[i][j];
+          if (suspect) {
+            localSum = 100;
+          } else {
+            localSum = 0;
+            continue;
+          }
+
+          // TODO for each value of k
+          // get each corner i - k, i + k, j - k, j + k
+          // sweep (non-inclusively) from [i - k][j - k] to [i - k][j + k]
+          // sweep (non-inclusively) from [i - k][j + k] to [i - k][j - k]
+          // sweep (non-inclusively) from [i + k][j - k] to [i + k][j + k]
+          // sweep (non-inclusively) from [i + k][j + k] to [i + k][j - k]
+          // sweep a minimum of 10 spaces
+          // sweep a maximum of 100 spaces
+          // when the sum is less than 1/4, stop the sweep
+          
+          // work left
+          k = 0;
+          while (suspect && i - k >= 0 && k <= kMax) {
+            suspect = map[i - k][j];
+            if (suspect) {
+              localSum += (100 - k);
+            }
+            k += 1;
+          }
+
+          // work right
+          k = 0;
+          while (suspect && i + k < rowLimit && k <= kMax) {
+            suspect = map[i + k][j];
+            if (suspect) {
+              localSum += (100 - k);
+            }
+            k += 1;
+          }
+
+          // work up
+          /*
+          k = 0;
+          while (suspect && (j - k >= 0) && k <= kMax) {
+            suspect = map[i][j - k];
+            if (suspect) {
+              localSum += (100 - k);
+            }
+            k += 1;
+          }
+          */
+
+          // work down
+          k = 0;
+          while (suspect && (j + k < colLimit) && k <= kMax) {
+            suspect = map[i][j + k];
+            if (suspect) {
+              localSum += (100 - k);
+            }
+            k += 1;
+          }
+
+          scores[i][j] = localSum;
+        }
       }
     }
+
+    score();
 
     /*
       Now that we have the neighborhood scores for each pixel, we need to 
@@ -167,33 +231,72 @@ $(function () {
     */
     //Find the pixel closest to the top left that has the highest score. The
     //	pixel with the highest score is where the highlight box will appear.
-    var targetx = 0;
-    var targety = 0;
-    var targetscore = 0;
-    for(i = 5; i < vidWidth-5; i++){
-      for(j = 5; j < vidHeight-5; j++){
-        //if(scores[i][j] > targetscore){
+    var targetx = 0
+      , targety = 0
+      , targetscore = 0
+      , targetCount = 0
+      ;
+
+    for (i = 5; i < vidWidth-5; i++) {
+      for (j = 5; j < vidHeight-5; j++) {
+        if (scores[i][j] > 1000) {
           targetx += i,
           targety += j;
-        //targetscore = scores[i][j];
-        //}
+          targetscore = 1000;
+          targetCount += 1;
+        }
+        /*
+        if (scores[i][j] > targetscore) {
+          targetscore = scores[i][j];
+          targetx = i;
+          targety = j;
+        }
+        */
       }
     }
-    targetx = targetx / vidHeight;
-    targety = targety / vidWidth;
-    if (diffSumX > 0 && diffSumY > 0) {
+    targetx = targetx / targetCount;
+    targety = targety / targetCount;
+
+    function useDiffSum() {
+      if (diffSumX > 0 && diffSumY > 0) {
+        var newLeft
+          , newTop
+          ;
+
+        newLeft = Math.floor(document.width * ((vidEl.width - diffSumX) / vidEl.width));
+        newTop = Math.floor(document.height * (diffSumY / vidEl.height));
+        if (newLeft > document.width * 0.2) {
+          // TODO debounce
+          //$('#js-snapshot').fadeToggle();
+        }
+        $hl.animate({ left: newLeft + 'px', top: newTop + 'px' }, Math.floor(intervalTime - intervalTime * 0.2));
+      }
+    }
+
+    function useGravity(targetx, targety) {
+      if (targetscore < 500) {
+        return;
+      }
+
       var newLeft
         , newTop
         ;
 
-      newLeft = Math.floor(document.width * ((vidEl.width - diffSumX) / vidEl.width));
-      newTop = Math.floor(document.height * (diffSumY / vidEl.height));
+      newLeft = Math.floor(document.width * ((vidEl.width - targetx) / vidEl.width));
+      newTop = Math.floor(document.height * (targety / vidEl.height));
+
       if (newLeft > document.width * 0.2) {
         // TODO debounce
         //$('#js-snapshot').fadeToggle();
       }
-      $hl.animate({ left: newLeft + 'px', top: newTop + 'px' }, Math.floor(intervalTime - intervalTime * 0.2));
+
+      $hl.animate(
+          { left: newLeft + 'px', top: newTop + 'px' }
+        , Math.floor(intervalTime - intervalTime * 0.2)
+      );
     }
+
+    useGravity(targetx, targety);
     canvas.putImageData(newPixels, 0, 0);
   }
 });
