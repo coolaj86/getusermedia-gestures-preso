@@ -24,12 +24,12 @@ $(function () {
       setInterval(draw, intervalTime);
       $('.js-allow-video').fadeOut();
       $('.js-toggle-video').fadeIn();
-      $('#js-video').fadeIn();
+      $('#js-snapshot').slideDown();
       $('#js-pointer').fadeIn();
     });
   });
   $('body').on('click', '.js-toggle-video', function () {
-    $('#js-snapshot').fadeToggle();
+    $('#js-snapshot').slideToggle();
   });
 
 
