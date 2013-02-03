@@ -272,9 +272,10 @@ $(function () {
         return;
       }
 
+      var goodScore = highScore * 0.9;
       for (i = 0; i < vidWidth; i++) {
         for (j = 0; j < vidHeight; j++) {
-          if (scores[i][j] > 1000) {
+          if (scores[i][j] > goodScore) {
             targetX += i,
             targetY += j;
             targetCount += 1;
