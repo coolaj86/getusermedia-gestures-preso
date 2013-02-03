@@ -10,6 +10,7 @@ $(function () {
     , pixLength
     , hl = document.querySelector('#js-pointer')
     , firstFrame = true
+    , intervalTime = 100
     ;
 
   $('body').on('click', '.js-allow-video', function () {
@@ -17,7 +18,7 @@ $(function () {
       videoEl.src = URL.createObjectURL(stream);
       console.log('URL video stream', videoEl.src);
       videoEl.play();
-      setInterval(draw, 200);
+      setInterval(draw, intervalTime);
     });
   });
 
@@ -173,12 +174,19 @@ $(function () {
     targetx = targetx / vidHeight;
     targety = targety / vidWidth;
     if (diffSumX > 0 && diffSumY > 0) {
-      hl.style.left = ""+Math.floor(
+      var newLeft
+        , newTop
+        ;
+
+      newLeft = ""+Math.floor(
         document.width*(diffSumX / videoEl.width)
       )+"px";
-      hl.style.top = ""+Math.floor(
+      newTop = ""+Math.floor(
         document.height*(diffSumY / videoEl.height)
       )+"px";
+      //hl.style.left = 
+      //hl.style.top = 
+      $(hl).animate({ left: newLeft, top: newTop }, intervalTime);
     }
     canvas.putImageData(newPixels, 0, 0);
   }

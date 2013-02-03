@@ -1,11 +1,24 @@
-.css-pointer{
-	position:fixed;
+.css-pointer {
+	position: fixed;
   width: 100px;
   height: 100px;
-	opacity:.8;
+	opacity: 0.8;
+}
+.css-snapshot-container {
+  width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+.css-snapshot {
+  text-align: center;
 }
 .container{
+  width: 700px;
 	margin-top: 50px; 
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
 }
 body {
   background: rgb(135,177,211); /* Old browsers */
