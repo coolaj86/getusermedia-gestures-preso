@@ -11,7 +11,7 @@ $(function () {
     , pixLength
     , $hl = $('#js-pointer')
     , firstFrame = true
-    , intervalTime = 100
+    , intervalTime = 200
     ;
 
   n.getUserMedia = n.getUserMedia || n.webkitGetUserMedia || n.mozGetUserMedia;
@@ -192,7 +192,7 @@ $(function () {
         // TODO debounce
         //$('#js-snapshot').fadeToggle();
       }
-      $hl.animate({ left: newLeft + 'px', top: newTop + 'px' }, intervalTime);
+      $hl.animate({ left: newLeft + 'px', top: newTop + 'px' }, Math.floor(intervalTime - intervalTime * 0.2));
     }
     canvas.putImageData(newPixels, 0, 0);
   }
