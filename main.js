@@ -16,6 +16,7 @@ $(function () {
     , intervalTime = 100
     , keyFrame = 20
     , drawCount = 0
+    , $document = $(document)
     ;
 
   function positionPointer(targetx, targety) {
@@ -23,8 +24,8 @@ $(function () {
       , newTop
       ;
 
-    newLeft = Math.floor($(document).width() * ((vidEl.width - targetx) / vidEl.width));
-    newTop = Math.floor($(document).height() * (targety / vidEl.height));
+    newLeft = Math.floor($document.width() * ((vidEl.width - targetx) / vidEl.width));
+    newTop = Math.floor($document.height() * (targety / vidEl.height));
 
     if (newLeft > document.width * 0.2) {
       // TODO debounce
