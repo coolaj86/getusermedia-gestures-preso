@@ -23,8 +23,8 @@ $(function () {
       , newTop
       ;
 
-    newLeft = Math.floor(document.width * ((vidEl.width - targetx) / vidEl.width));
-    newTop = Math.floor(document.height * (targety / vidEl.height));
+    newLeft = Math.floor($(document).width() * ((vidEl.width - targetx) / vidEl.width));
+    newTop = Math.floor($(document).height() * (targety / vidEl.height));
 
     if (newLeft > document.width * 0.2) {
       // TODO debounce
@@ -268,7 +268,7 @@ $(function () {
       }
 
       if (highScore < kMax * 15) {
-        console.log('no movement values were high enough');
+        console.log('no movement values were high enough:', highScore, 'kMax * 15');
         return;
       }
 
@@ -284,7 +284,7 @@ $(function () {
       }
 
       if (targetCount < 10) {
-        console.log('too few movement values were high enough');
+        console.log('too few movement values were high enough: ', targetCount, '< 10');
         return;
       }
 
