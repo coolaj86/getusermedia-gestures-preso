@@ -9,6 +9,8 @@ Try the demo now at <http://coolaj86.github.com/getusermedia-gestures-preso>
 
 See Aaron Frost's blog post at <http://40win.com>
 
+See also this stuff that's way better: http://stackoverflow.com/questions/10227464/how-to-detect-hand-gesture-in-live-webcam-using-javascript
+
 2014-05-01
 ---
 
