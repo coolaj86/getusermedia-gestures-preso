@@ -1,14 +1,34 @@
-#highlight{
-	position:fixed;
-	background-color:green;
-	opacity:.8;
-	height:50px;
-	width:50px;
+html { 
+  background: url(http://upload.wikimedia.org/wikipedia/en/e/e3/Firefox-logo.svg) no-repeat center center fixed; 
+  /*background: url(http://upload.wikimedia.org/wikipedia/en/d/d0/Chrome_Logo.svg) no-repeat center center fixed;*/
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+
+}
+.css-pointer {
+	position: fixed;
+  width: 100px;
+  height: 100px;
+	opacity: 0.8;
+}
+.css-snapshot-container {
+  width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+.css-snapshot {
+  text-align: center;
 }
 .container{
+  width: 330px;
 	margin-top: 50px; 
-}
-body {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+
   background: rgb(135,177,211); /* Old browsers */
   background: -moz-linear-gradient(top, rgba(135,177,211,1) 0%, rgba(0,71,153,1) 100%, rgba(30,87,153,1) 100%); /* FF3.6+ */
   background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(135,177,211,1)), color-stop(100%,rgba(0,71,153,1)), color-stop(100%,rgba(30,87,153,1))); /* Chrome,Safari4+ */
